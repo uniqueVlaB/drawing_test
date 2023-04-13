@@ -8,19 +8,23 @@ namespace drawing_test
 {
     class Program
     {
+        
+
         static void Main(string[] args)
         {
             // Створюємо список планет
             Map.planets = new List<Planet>();
             // Встановлюємо кількість планет
-            Map.numPlanets = 50;
+            Map.numPlanets = 100;
             // Встановлюємо розмірність карти
-            Map.height = 600;
-            Map.width = 800;
+            Map.height = 1080;
+            Map.width = 1920;
             // Встановлюємо мінімальну відстань між планетами
-            Map.minDistanceBetweenPlanets = 50;
+            Map.minDistanceBetweenPlanets = 100;
             // Встановлюємо мінімальну відстань від планети до лінії з'єднання
-            Map.minDistanceFromPlanetToEdge = 25;
+            Map.minDistanceFromPlanetToEdge = 50;
+            // Встановлюємо початкову кількість з'єднань із сусідами
+            Map.connectionsDifficulty = 3;
 
             // Генеруємо планети випадковим чином
             Random rnd = new Random();
@@ -37,14 +41,14 @@ namespace drawing_test
 
             // Створюємо список з'єднань між планетами
             Map.edges = new List<Edge>();
-
+            
             // З'єднуємо кожну планету із найближчим сусідом
             foreach (Planet planet in Map.planets)
             {
                 List<Planet> neighbors = Map.planets
                     .OrderBy(p => Distance(p.Position, planet.Position))
                     .Where(p => p != planet)
-                    .Take(3)
+                    .Take(Map.connectionsDifficulty)
                     .ToList();
 
                 foreach (Planet neighbor in neighbors)
@@ -90,7 +94,8 @@ namespace drawing_test
                     }
                 }
             }
-
+            // Перевіряємо цілісність системи планет
+            CheckIntegrity();
 
             Bitmap bmp = new Bitmap(Map.width, Map.height);
 
@@ -191,6 +196,59 @@ namespace drawing_test
             return false;
         }
 
+        public static void CheckIntegrity()
+        {
+            HashSet<Planet> visitedPlanets = new HashSet<Planet>();
+            Stack<Planet> planetsToVisit = new Stack<Planet>();
+
+            while (visitedPlanets.Count != Map.planets.Count) {
+                planetsToVisit.Clear();
+                visitedPlanets.Clear();
+                planetsToVisit.Push(Map.planets[0]);
+
+                while (planetsToVisit.Count > 0)
+                {
+                    Planet currentPlanet = planetsToVisit.Pop();
+                    visitedPlanets.Add(currentPlanet);
+
+                    foreach (Planet connectedPlanet in currentPlanet.Connections)
+                    {
+                        if (!visitedPlanets.Contains(connectedPlanet))
+                        {
+                            planetsToVisit.Push(connectedPlanet);
+                        }
+                    }
+                }
+
+                if (visitedPlanets.Count != Map.planets.Count)
+                {
+                    //Не всі планети відвідали, система не цілісна
+
+                    //Виправити систему:
+                    // 1. Випадковий вибір планети, яку не відвідували
+                    // 2. Знайдіть найближчу планету на відстані, яку відвідували
+                    // 3. Створення зв'язку між цими планетами
+
+                    Planet unvisitedPlanet = Map.planets.Except(visitedPlanets).First();
+                    double minDistance = double.MaxValue;
+                    Planet closestVisitedPlanet = null;
+
+                    foreach (Planet visitedPlanet in visitedPlanets)
+                    {
+                        double distance = Distance(unvisitedPlanet.Position, visitedPlanet.Position);
+                        if (distance < minDistance)
+                        {
+                            minDistance = distance;
+                            closestVisitedPlanet = visitedPlanet;
+                        }
+                    }
+
+                    closestVisitedPlanet.Connections.Add(unvisitedPlanet);
+                    unvisitedPlanet.Connections.Add(closestVisitedPlanet);
+                    Map.edges.Add(new Edge(closestVisitedPlanet, unvisitedPlanet));
+                }
+            }
+        }
 
 
 

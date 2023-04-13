@@ -15,5 +15,6 @@ namespace drawing_test
         public static int minDistanceBetweenPlanets { get; set; }
         public static int minDistanceFromPlanetToEdge { get; set; }
         public static int numPlanets { get; set; }
+        public static int connectionsDifficulty { get; set; }
     }
 }
